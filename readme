@@ -1,0 +1,65 @@
+------------------------------------
+# The task
+
+You will have to prepare a small project with
+- kafka listener (message is a colour) consuming in batches
+- shared cache (redis, hazelcast...) to store messages
+- backup cache data in mongo (loaded on app startup)
+- rest endpoint available in swagger to get statistics aggregated on data from cache
+
+For example we send 3 kafka messages: red, green, red
+We store 3 entries in cache and mongo (1 per each message)
+
+We get statistics after aggregation
+{"red": 2, "green": 1}
+
+We expect to be able to run a test demonstrating the app working (no extra setup needed).
+It can use test containers or embedded broker and db
+
+Note the following when preparing this task: spring-boot is a must, integration tests is a must
+
+------------------------------------
+# Prepare environment
+
+Start the containers (zookeeper, kafka, mongo, mongo-express, redis):
+
+$ docker-compose up -d
+
+Check the containers:
+docker ps
+
+If you missing one of them try to restart:
+docker-compose down
+docker-compose up
+
+------------------------------------
+# Compile and run
+
+./mvnw clean package
+java -jar ./target/Colours.jar
+
+------------------------------------
+# Produce messages
+
+In the /opt/bitnami/kafka/bin folder of the kafka container you can find the kafka-console-producer.sh script.
+
+docker exec -it kafka /bin/sh
+cd /opt/bitnami/kafka/bin
+kafka-console-producer.sh --bootstrap-server localhost:9092 --topic colour
+
+Now, you can enter text. When you press enter the line will be placed into the colour topic in the kafka broker.
+After entering some words, you can check the results.
+
+------------------------------------
+# Check these
+
+http://localhost:8080/api/
+
+http://localhost:8080/swagger-ui.html
+
+In a browser you can use the mongo-express web client, you can check the mongo db content:
+URL     : localhost:8081
+Username: express
+Password: 123456
+          -> Sign in
+

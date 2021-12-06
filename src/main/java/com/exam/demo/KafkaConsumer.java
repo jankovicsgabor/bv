@@ -16,7 +16,7 @@ public class KafkaConsumer {
 
     @KafkaListener(topics="${kafka.topic_name}")
     public void listen(String message) {
-        logger.info("Incoming: " + message);
+        logger.info("Incoming: {}", message);
         colourService.save(new Colour(message));
     }
 

@@ -2,26 +2,23 @@ package com.exam.demo;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
+import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.serializer.GenericToStringSerializer;
+import org.springframework.data.redis.repository.configuration.EnableRedisRepositories;
 
-// Configuration class to set up the Redis configuration.
 @Configuration
+@EnableRedisRepositories
 public class RedisConfig {
 
-    // Setting up the Jedis connection factory.
     @Bean
-    JedisConnectionFactory jedisConnectionFactory() {
-        return new JedisConnectionFactory();
+    public LettuceConnectionFactory redisConnectionFactory(final RedisProperties redisProperties) {
+        return new LettuceConnectionFactory(redisProperties.getRedisHost(), redisProperties.getRedisPort());
     }
 
-    // Setting up the Redis template object.
     @Bean
-    public RedisTemplate<String, Object> redisTemplate() {
-        final RedisTemplate<String, Object> redisTemplate = new RedisTemplate<String, Object>();
-        redisTemplate.setConnectionFactory(jedisConnectionFactory());
-        redisTemplate.setValueSerializer(new GenericToStringSerializer<Object>(Object.class));
-        return redisTemplate;
+    public RedisTemplate<?, ?> redisTemplate(final LettuceConnectionFactory connectionFactory) {
+        RedisTemplate<byte[], byte[]> template = new RedisTemplate<>();
+        template.setConnectionFactory(connectionFactory);
+        return template;
     }
 }

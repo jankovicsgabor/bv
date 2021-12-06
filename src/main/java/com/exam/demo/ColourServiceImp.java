@@ -1,5 +1,7 @@
 package com.exam.demo;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -13,6 +15,8 @@ import java.util.stream.Collectors;
 @Service
 public class ColourServiceImp implements ColourService {
 
+    private static final Logger logger = LoggerFactory.getLogger(ColourServiceImp.class);
+
     private static final String COLOUR_KEY = "Colour";
 
     @Autowired
@@ -22,8 +26,6 @@ public class ColourServiceImp implements ColourService {
     RedisTemplate<String, Object> redisTemplate;
     private HashOperations<String, String, Colour> hashOperations;
 
-    // This annotation makes sure that the method needs to be executed after
-    // dependency injection is done to perform any initialization.
     @PostConstruct
     private void intializeHashOperations() {
         hashOperations = redisTemplate.opsForHash();
@@ -39,7 +41,10 @@ public class ColourServiceImp implements ColourService {
 
     @Override
     public void save(final Colour colour) {
+        logger.info("Service will save incoming colour ({}) to database...", colour.colourName);
         repository.save(colour);
+
+        logger.info("and put it into cache.");
         hashOperations.put(COLOUR_KEY, colour.getId(), colour);
     }
 
@@ -52,7 +57,6 @@ public class ColourServiceImp implements ColourService {
                         .stream()
                         .map(e -> e.getValue())
                         .collect(Collectors.toList());
-
         return colours;
     }
 }

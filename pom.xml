@@ -23,12 +23,6 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
-		<!-- Swagger UI -->
-		<dependency>
-			<groupId>org.springdoc</groupId>
-			<artifactId>springdoc-openapi-ui</artifactId>
-			<version>1.5.12</version>
-		</dependency>
 		<dependency>
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-ui</artifactId>
@@ -41,13 +35,8 @@
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-data-redis</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-mongodb</artifactId>
 		</dependency>
-		<!-- spring data redis dependency -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-redis</artifactId>
@@ -56,8 +45,6 @@
 			<groupId>redis.clients</groupId>
 			<artifactId>jedis</artifactId>
 		</dependency>
-
-
 
 		<!-- Test -->
 		<dependency>
@@ -71,11 +58,15 @@
 			<scope>test</scope>
 			<version>2.8.0</version>
 		</dependency>
-
-		<!-- de.flapdoodle.embed.mongo provides embedded MongoDB for integration tests -->
 		<dependency>
 			<groupId>de.flapdoodle.embed</groupId>
 			<artifactId>de.flapdoodle.embed.mongo</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>it.ozimov</groupId>
+			<artifactId>embedded-redis</artifactId>
+			<version>0.7.1</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -83,12 +74,9 @@
 			<artifactId>junit</artifactId>
 			<scope>test</scope>
 		</dependency>
-		<!-- After adding de.flapdoodle.embed.mongo dependency Spring Boot will automatically try to download and start the embedded MongoDB when running tests. -->
-
 	</dependencies>
 
 	<build>
-		<!-- final jar name -->
 		<finalName>Colours</finalName>
 		<plugins>
 			<plugin>

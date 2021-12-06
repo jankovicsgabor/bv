@@ -18,6 +18,11 @@ public class Colour implements Serializable {
         this.colourName = colourName;
     }
 
+    public Colour(String id, String colourName) {
+        this.colourName = colourName;
+        this.id = id;
+    }
+
     @Override
     public String toString() {
         return String.format("Customer[id=%s, firstName='%s']", id, colourName);

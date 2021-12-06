@@ -1,166 +1,81 @@
 package com.exam.demo;
 
-
-import com.mongodb.DBObject;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.jupiter.api.*;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.data.mongo.AutoConfigureDataMongo;
-import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.test.EmbeddedKafkaBroker;
+import org.springframework.kafka.test.context.EmbeddedKafka;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.springframework.test.context.junit4.SpringRunner;
+import static org.junit.Assert.assertTrue;
 
-
-import static org.assertj.core.api.Assertions.assertThat;
-
-//https://jcompetence.com/2021/03/08/integration-testing-with-springboot-embedded-mongo-mockmvc/
-//https://www.geekyhacker.com/2020/10/03/test-spring-kafka-consumer-and-producer-with-embeddedkafka/
-//https://www.baeldung.com/spring-boot-embedded-mongodb
-
-//https://jcompetence.com/2021/03/08/integration-testing-with-springboot-embedded-mongo-mockmvc/
-//@DataMongoTest
-//Use @AutoConfigureDataMongo with @SpringBootTest and this will resolve this ambiguity issue. @SpringBootTest and @DataMongoTest cannot be used together.
-@AutoConfigureDataMongo
-//@AutoConfigureDataMongo
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-//@ExtendWith(SpringExtension.class)
-//@DirtiesContext
-//@EmbeddedKafka
-//@EmbeddedKafka(partitions = 1, brokerProperties = { "listeners=PLAINTEXT://localhost:9092", "port=9092" })
-//@EmbeddedKafka(partitions = 1, topics = { "colour" })
-//@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@SpringBootTest(classes = {
+		com.exam.demo.MongoDbTestConfiguration.class,
+		com.exam.demo.TestRedisConfiguration.class,
+		com.exam.demo.DemoApplication.class,
+		com.exam.demo.KafkaConsumer.class,
+		com.exam.demo.KafkaProducerConfig.class,
+		com.exam.demo.KafkaConsumerConfig.class,
+		com.exam.demo.ColourRepository.class,
+		com.exam.demo.ColourServiceImp.class},
+		webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@DirtiesContext
+@EmbeddedKafka(partitions = 1, topics = { "${kafka.topic_name}" })
+@TestPropertySource(properties = "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.mongo.embedded.EmbeddedMongoAutoConfiguration")
 class DemoApplicationTests {
 	private static final Logger LOGGER = LoggerFactory.getLogger(DemoApplicationTests.class);
 
 	@Autowired
-	private MongoTemplate mongoTemplate;
+	private KafkaConsumer kafkaConsumer;
 
-/*
+	@Autowired
+	private KafkaTemplate<String, String> kafkaTemplate;
+
+	@Autowired
+	EmbeddedKafkaBroker embeddedKafkaBroker;
+
+	@Value(value="${kafka.topic_name}")
+	private String TOPIC_NAME;
+
+	@Autowired
+	MongoTemplate mongoTemplate;
+
 	@LocalServerPort
 	private int port;
 
 	@Autowired
 	private TestRestTemplate restTemplate;
 
-	@DisplayName("test somethig"
-			+ " what i wanna test")
-	@Test
-	public void greetingShouldReturnDefaultMessage() throws Exception {
+	@Before
+	public void setup() throws Exception {
 	}
 
-	private static final String TOPIC_NAME = "colour";
-
-        @Autowired
-        EmbeddedKafkaBroker embeddedKafkaBroker;
-
-	@Autowired
-	KafkaConsumer kafkaConsumer;
-
-	/*
-	@Test
-	public void someTest(@EmbeddedKafkaAddress String bootstrapServers) {
-		Map<String, Object> consumerProps = KafkaTestUtils.consumerProps("consumer-1", "true", this.embeddedKafkaBroker);
-		consumerProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-		ConsumerFactory<Integer, String> cf = new DefaultKafkaConsumerFactory<>(consumerProps);
-		Consumer<Integer, String> consumer = cf.createConsumer();
-		consumer.subscribe(Collections.singleton(TOPIC_NAME));
-
-		//this.embeddedKafkaBroker.consumeFromAnEmbeddedTopic(consumer, TOPIC);
-		ConsumerRecords<Integer, String> replies = KafkaTestUtils.getSingleRecord(consumer, TOPIC_NAME);
-		//ConsumerRecords<Integer, String> replies = KafkaTestUtils.getRecords(consumer);
-		assertThat(replies.count()).isGreaterThanOrEqualTo(1);
+	@After
+	public void clean() {
 	}
-
-
-            @Autowired
-            private KafkaConsumer consumer;
-
-            @Autowired
-            private KafkaProducer producer;
-
-            @Value("${kafka.topic_name}")
-            private String topic;
-
-            @Test
-            public void givenEmbeddedKafkaBroker_whenSendingtoSimpleProducer_thenMessageReceived()
-                    throws Exception {
-                producer.send(topic, "Sending with own simple KafkaProducer");
-                consumer.getLatch().await(10000, TimeUnit.MILLISECONDS);
-
-                assertThat(consumer.getLatch().getCount(), equalTo(0L));
-                assertThat(consumer.getPayload(), containsString("embedded-test-topic"));
-            }
-
-
-            private Consumer<Integer, String> configureConsumer() {
-                Map<String, Object> consumerProps = KafkaTestUtils.consumerProps("testGroup", "true", embeddedKafkaBroker);
-                consumerProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-                Consumer<Integer, String> consumer = new DefaultKafkaConsumerFactory<Integer, String>(consumerProps).createConsumer();
-                consumer.subscribe(Collections.singleton(TOPIC));
-                return consumer;
-            }
-
-            private Producer<Integer, String> configureProducer() {
-                Map<String, Object> producerProps = new HashMap<>(KafkaTestUtils.producerProps(embeddedKafkaBroker));
-                return new DefaultKafkaProducerFactory<Integer, String>(producerProps).createProducer();
-            }
-
-            @Test
-            public void givenEmbeddedKafkaBroker_whenSendingtoSimpleProducer_thenMessageReceived() {
-                Consumer<Integer, String> consumer = configureConsumer();
-                Producer<Integer, String> producer = configureProducer();
-
-                producer.send(new ProducerRecord<>(TOPIC, 123, "my-test-value"));
-                ConsumerRecord<Integer, String> singleRecord = KafkaTestUtils.getSingleRecord(consumer, TOPIC);
-
-                assertThat(singleRecord).isNotNull();
-                assertThat(singleRecord.key()).isEqualTo(123);
-                assertThat(singleRecord.value()).isEqualTo("my-test-value");
-
-                LOGGER.info("It is fine.");
-
-                consumer.close();
-                producer.close();
-            }
-
-
 
 	@Test
-	void contextLoads() {
-		String message = "WWW";
-		producer.send(new ProducerRecord<>(TOPIC_NAME, 123, message));
-		producer.flush();
+	void contextLoads() throws InterruptedException {
+		kafkaTemplate.send(TOPIC_NAME, "Red");
+		kafkaTemplate.send(TOPIC_NAME, "Blue");
+		kafkaTemplate.send(TOPIC_NAME, "Red");
+		Thread.sleep(4000);
 
-		LOGGER.info("Message was: " + kafkaConsumer.getLastMessage());
-	}
+		String actualResponse =
+				this.restTemplate
+				.getForObject("http://localhost:" + port + "/api/", String.class);
+		LOGGER.info("The response on the GET https://localhost/api/ endpoint is : {}", actualResponse);
 
-	private Producer<Integer, String> producer;
-
-	@BeforeAll
-	void setUp() {
-		Map<String, Object> configs = new HashMap<>(KafkaTestUtils.producerProps(embeddedKafkaBroker));
-		producer = new DefaultKafkaProducerFactory<Integer, String>(configs).createProducer();
-	}
-
-	@AfterAll
-	void shutdown() {
-		producer.close();
-	}
-
-	 */
-
-	@Test
-	//void contextLoads(@Autowired MongoTemplate mongoTemplate) {
-	void contextLoads() {
-
-		//mongoTemplate.findAll(DBObject.class, "collection");
+		// The expected result is {"Red":2,"Blue":1} or {"Blue":1,"Red":2}
+		assertTrue(actualResponse.equals("{\"Red\":2,\"Blue\":1}") || actualResponse.equals("{\"Blue\":1,\"Red\":2}"));
 	}
 }
